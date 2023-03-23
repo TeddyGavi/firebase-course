@@ -17,6 +17,69 @@ service cloud.firestore {
     }
 
     // Add new rules here
+
+    // We have two collections, users and todos  
+    // assumptions are users are never doing the right thing
+    // CRUD operations on each collection (minus the delete on users...)
+    // Best to create reuseable functions that can clean up the code
+    // Standard here is a simple function with one return statement, typically true or false or get some data
+    // Limit the incoming request by time?
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(Id){
+      return request.auth.uid == Id;
+    }
+
+    function isSignedInOwner(Id) {
+      return isSignedIn() && isOwner(Id)
+    }
+
+  // need to read the user document, not availabe on the user object, so need to use a different approach
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+    }
+
+    function isAdmin() {
+      return getUserData().admin == true
+    }
+
+    // function existingData() {
+    //   return resource.data
+    // }
+
+    function incomingData() {
+      return request.resource.data
+    }
+    
+  // resource is existing data info -> for updating, deleting and reading
+  // request.resource is incoming data -> used when creating new data
+  // "capture" id in {}
+    match /todos/{todoId} {
+    // Any authenticated user may create to-do items for themselves.
+      allow create: if isSignedInOwner(incomingData().uid)
+      // allow read: if isSignedIn()
+
+    // Users can view, update and delete their own to-do items.
+      allow read, update, delete: if isSignedInOwner(resource.data.uid)
+
+      // allow read, update, delete: if isSignedInOwner(request.auth.uid)
+    }
+    match /users/{userId} {
+    // Any authenticated user may create a profile and view other users' profiles.
+      allow read, create: if isSignedIn()
+
+    // Any authenticated user is allowed to edit their own profile.
+    // Admin users can edit any user's profile.
+      allow update: if isSignedIn() && (isAdmin() || isOwner(userId)) 
+
+
+    // Only the admin users can make other users admins.
+    }
+    
    
   }
 }

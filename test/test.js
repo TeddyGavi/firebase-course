@@ -1,3 +1,4 @@
+require('dotenv');
 const assert = require('assert');
 const firebase = require('@firebase/testing');
 const fs = require('fs');
@@ -60,5 +61,82 @@ describe('Setup', () => {
     const db = getFirestore(myAuth);
     const testDoc = db.collection('test_documents').doc(docId);
     await firebase.assertFails(testDoc.update({ content: 'after' }));
+  });
+
+  // todos
+
+  it('A signed in user can read their own todos', async () => {
+    const db = getFirestore(myAuth);
+    const testDoc = db.collection('todos').where('uid', '==', myId);
+    await firebase.assertSucceeds(testDoc.get());
+  });
+
+  it('A signed in user cannot read other users todos', async () => {
+    const other = getFirestore({ uid: theirId, email: 'hi@test.com' });
+    await other
+      .collection('todos')
+      .doc('hydrate')
+      .set({ foo: 'bar', uid: theirId });
+
+    const db = getFirestore(myAuth);
+    const testDoc = db.collection('todos').doc('hydrate');
+    await firebase.assertFails(testDoc.get());
+  });
+
+  it('Allows a signed in user to update their own todos', async () => {
+    const db = getFirestore(myAuth);
+    db.collection('todos').doc('test').set({ foo: 'bar', uid: myId });
+    const testDoc = db.collection('todos').doc('test');
+    await firebase.assertSucceeds(testDoc.update({ foo: 'baz', uid: myId }));
+  });
+
+  it('Cannot update another users todo', async () => {
+    // use admin to create todo with their id
+    const admin = getAdminFirestore();
+    admin.collection('todos').doc('test1').set({ foo: 'bar', uid: theirId });
+    const db = getFirestore(myAuth);
+    const testDoc = db.collection('todos').doc('test1');
+    await firebase.assertFails(testDoc.update({ foo: 'baz', uid: myId }));
+  });
+
+  it('Users can delete todos that belong to them', async () => {
+    const db = getFirestore(myAuth);
+    db.collection('todos').doc('delete').set({ foo: 'bar', uid: myId });
+    const deleteDoc = db.collection('todos').doc('delete');
+    await firebase.assertSucceeds(deleteDoc.delete());
+  });
+
+  it("users cannot delete todos that don't belong to them", async () => {
+    // use admin to create todo with their id
+    const admin = getAdminFirestore();
+    admin.collection('todos').doc('NO').set({ foo: 'bar', uid: theirId });
+    const db = getFirestore(myAuth);
+    const noDel = db.collection('todos').doc('NO');
+    await firebase.assertFails(noDel.delete());
+  });
+
+  it('Allows a signed in user to create a new todo', async () => {
+    const db = getFirestore(myAuth);
+    const testDoc = db.collection('todos').doc('long walk');
+    await firebase.assertSucceeds(testDoc.set({ foo: 'bar', uid: myId }));
+  });
+
+  it("Doesn't allow a signed in user to create another users new todo", async () => {
+    const db = getFirestore(myAuth);
+    const testDoc = db.collection('todos').doc('long walk');
+    await firebase.assertFails(testDoc.set({ foo: 'bar', uid: theirId }));
+  });
+
+  // users
+  it('A signed in user can view users collection', async () => {
+    const db = getFirestore(myAuth);
+    const testDoc = db.collection('users');
+    await firebase.assertSucceeds(testDoc.get());
+  });
+
+  it('A not signed in user cannot view users collection', async () => {
+    const db = getFirestore(null);
+    const testDoc = db.collection('users');
+    await firebase.assertFails(testDoc.get());
   });
 });
