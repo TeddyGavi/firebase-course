@@ -44,29 +44,33 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return getUserData().admin == true
+      return getUserData().isAdmin == true
     }
 
-    // function existingData() {
-    //   return resource.data
-    // }
+    function existingData() {
+      return resource.data
+    }
 
     function incomingData() {
       return request.resource.data
     }
+
+    function isAdminChanged() {
+      // return incomingData().keys().hasAll(['isAdmin']) || incomingData().diff(existingData()).affectedKeys().hasAll(['isAdmin'])
+      return incomingData().diff(existingData()).affectedKeys().hasOnly(['isAdmin'])
+    }
     
   // resource is existing data info -> for updating, deleting and reading
-  // request.resource is incoming data -> used when creating new data
+  // request.resource is incoming data -> represents state of new data, present only on write requests
   // "capture" id in {}
+
     match /todos/{todoId} {
     // Any authenticated user may create to-do items for themselves.
-      allow create: if isSignedInOwner(incomingData().uid)
-      // allow read: if isSignedIn()
+      allow create: if isSignedInOwner(incomingData().uid) && incomingData().name is string && incomingData().name.size() > 0
 
     // Users can view, update and delete their own to-do items.
-      allow read, update, delete: if isSignedInOwner(resource.data.uid)
+      allow read, update, delete: if isSignedInOwner(existingData().uid)
 
-      // allow read, update, delete: if isSignedInOwner(request.auth.uid)
     }
     match /users/{userId} {
     // Any authenticated user may create a profile and view other users' profiles.
@@ -74,10 +78,9 @@ service cloud.firestore {
 
     // Any authenticated user is allowed to edit their own profile.
     // Admin users can edit any user's profile.
-      allow update: if isSignedIn() && (isAdmin() || isOwner(userId)) 
-
-
     // Only the admin users can make other users admins.
+      allow update: if isSignedIn() && (isAdmin() || isOwner(userId)) && !(isAdminChanged())
+
     }
     
    

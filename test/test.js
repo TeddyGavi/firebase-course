@@ -76,7 +76,7 @@ describe('Setup', () => {
     await other
       .collection('todos')
       .doc('hydrate')
-      .set({ foo: 'bar', uid: theirId });
+      .set({ foo: 'bar', uid: theirId, name: 'hi' });
 
     const db = getFirestore(myAuth);
     const testDoc = db.collection('todos').doc('hydrate');
@@ -85,9 +85,13 @@ describe('Setup', () => {
 
   it('Allows a signed in user to update their own todos', async () => {
     const db = getFirestore(myAuth);
-    db.collection('todos').doc('test').set({ foo: 'bar', uid: myId });
+    db.collection('todos')
+      .doc('test')
+      .set({ foo: 'bar', uid: myId, name: 'hi' });
     const testDoc = db.collection('todos').doc('test');
-    await firebase.assertSucceeds(testDoc.update({ foo: 'baz', uid: myId }));
+    await firebase.assertSucceeds(
+      testDoc.update({ foo: 'baz', uid: myId, name: 'hi' })
+    );
   });
 
   it('Cannot update another users todo', async () => {
@@ -101,7 +105,9 @@ describe('Setup', () => {
 
   it('Users can delete todos that belong to them', async () => {
     const db = getFirestore(myAuth);
-    db.collection('todos').doc('delete').set({ foo: 'bar', uid: myId });
+    db.collection('todos')
+      .doc('delete')
+      .set({ foo: 'bar', uid: myId, name: 'hi' });
     const deleteDoc = db.collection('todos').doc('delete');
     await firebase.assertSucceeds(deleteDoc.delete());
   });
@@ -118,7 +124,17 @@ describe('Setup', () => {
   it('Allows a signed in user to create a new todo', async () => {
     const db = getFirestore(myAuth);
     const testDoc = db.collection('todos').doc('long walk');
-    await firebase.assertSucceeds(testDoc.set({ foo: 'bar', uid: myId }));
+    await firebase.assertSucceeds(
+      testDoc.set({ foo: 'bar', uid: myId, name: 'hi' })
+    );
+  });
+
+  it('Does not Allow a signed in user to create a new empty todo', async () => {
+    const db = getFirestore(myAuth);
+    const testDoc = db.collection('todos').doc('long walk');
+    await firebase.assertFails(
+      testDoc.set({ foo: 'bar', uid: myId, name: '' })
+    );
   });
 
   it("Doesn't allow a signed in user to create another users new todo", async () => {

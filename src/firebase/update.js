@@ -29,7 +29,6 @@ async function update(path, data) {
 
 export async function updateTodo(id, data) {
   const path = `${TODOS}/${id}`;
-
   update(path, data)
     .then((docId) => {
       console.log(`Document updated at ${path}`);

@@ -35,6 +35,9 @@ const Profile = () => {
     }
   }, []);
 
+  const handleAdminChange = () => {
+    updateUser(userDoc.uid, { isAdmin: !userDoc.isAdmin });
+  };
   return (
     <main>
       <Card>
@@ -56,6 +59,29 @@ const Profile = () => {
           </>
         )}
       </LoadingError>
+      {/* Toggle admin */}
+      {adminMode && userDoc?.uid !== user.uid ? (
+        <section>
+          <Card>
+            <div className="flex items-center justify-between">
+              <span> {userDoc?.isAdmin ? 'Remove' : 'Make'} Admin?</span>
+              <button
+                type="button"
+                className={`py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${
+                  userDoc?.isAdmin
+                    ? `bg-red-600 hover:bg-red-700 focus:ring-red-500 `
+                    : `bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500 `
+                } focus:outline-none focus:ring-2 focus:ring-offset-2 `}
+                onClick={() => handleAdminChange()}
+              >
+                {userDoc?.isAdmin ? 'Remove!' : 'Yes!'}
+              </button>
+            </div>
+          </Card>
+        </section>
+      ) : (
+        <></>
+      )}
     </main>
   );
 };
