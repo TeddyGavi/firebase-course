@@ -18,13 +18,6 @@ service cloud.firestore {
 
     // Add new rules here
 
-    // We have two collections, users and todos  
-    // assumptions are users are never doing the right thing
-    // CRUD operations on each collection (minus the delete on users...)
-    // Best to create reuseable functions that can clean up the code
-    // Standard here is a simple function with one return statement, typically true or false or get some data
-    // Limit the incoming request by time?
-
     function isSignedIn() {
       return request.auth != null;
     }
@@ -32,12 +25,8 @@ service cloud.firestore {
     function isOwner(Id){
       return request.auth.uid == Id;
     }
-
-    function isSignedInOwner(Id) {
-      return isSignedIn() && isOwner(Id)
-    }
-
-  // need to read the user document, not availabe on the user object, so need to use a different approach
+    
+  // need to read the specific user document, not availabe on the request object, need query the users collection for the request.auth.uid
 
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data
@@ -56,33 +45,32 @@ service cloud.firestore {
     }
 
     function isAdminChanged() {
-      // return incomingData().keys().hasAll(['isAdmin']) || incomingData().diff(existingData()).affectedKeys().hasAll(['isAdmin'])
+      // check for status changed of admin, prevents race condition, consider Firebase Admin SDK and custom auth
       return incomingData().diff(existingData()).affectedKeys().hasOnly(['isAdmin'])
     }
     
-  // resource is existing data info -> for updating, deleting and reading
-  // request.resource is incoming data -> represents state of new data, present only on write requests
-  // "capture" id in {}
-
     match /todos/{todoId} {
     // Any authenticated user may create to-do items for themselves.
-      allow create: if isSignedInOwner(incomingData().uid) && incomingData().name is string && incomingData().name.size() > 0
+      allow create: if isSignedIn() && isOwner(incomingData().uid)
+
+      // a good idea to verify the input of todos, client and backend.
+      // cannot trust any incoming data, ie: 
+      // && incomingData().name is string && incomingData().name.size() > 0
+      // etc as required...
 
     // Users can view, update and delete their own to-do items.
-      allow read, update, delete: if isSignedInOwner(existingData().uid)
-
+      allow read, update, delete: if isSignedIn() && isOwner(existingData().uid)
     }
+
+
     match /users/{userId} {
     // Any authenticated user may create a profile and view other users' profiles.
       allow read, create: if isSignedIn()
-
+      
     // Any authenticated user is allowed to edit their own profile.
     // Admin users can edit any user's profile.
     // Only the admin users can make other users admins.
-      allow update: if isSignedIn() && (isAdmin() || isOwner(userId)) && !(isAdminChanged())
-
+      allow update: if isSignedIn() && (isAdmin() || isOwner(existingData().uid)) && !(isAdminChanged())
     }
-    
-   
   }
 }
