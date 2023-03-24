@@ -59,28 +59,35 @@ const Profile = () => {
           </>
         )}
       </LoadingError>
-      {/* Toggle admin */}
-      {adminMode && userDoc?.uid !== user.uid ? (
-        <section>
+      {/* Make admin */}
+      {adminMode && userDoc?.uid !== user.uid && (
+        <section className="transition-all ">
           <Card>
             <div className="flex items-center justify-between">
-              <span> {userDoc?.isAdmin ? 'Remove' : 'Make'} Admin?</span>
-              <button
-                type="button"
-                className={`py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${
-                  userDoc?.isAdmin
-                    ? `bg-red-600 hover:bg-red-700 focus:ring-red-500 `
-                    : `bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500 `
-                } focus:outline-none focus:ring-2 focus:ring-offset-2 `}
-                onClick={() => handleAdminChange()}
-              >
-                {userDoc?.isAdmin ? 'Remove!' : 'Yes!'}
-              </button>
+              <div className="flex flex-col justify-between ">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">
+                  {' '}
+                  Make Admin
+                </h3>
+                <span className="mt-1 text-sm text-gray-500">
+                  {!userDoc?.isAdmin
+                    ? `This action cannot be undone.`
+                    : `User ${userDoc?.displayName} is an Admin.`}
+                </span>
+              </div>
+              {!userDoc?.isAdmin && (
+                <button
+                  type="button"
+                  className="py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500 
+              focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  onClick={() => handleAdminChange()}
+                >
+                  Yes !
+                </button>
+              )}
             </div>
           </Card>
         </section>
-      ) : (
-        <></>
       )}
     </main>
   );
