@@ -85,7 +85,8 @@ describe('Setup', () => {
 
   it('Allows a signed in user to update their own todos', async () => {
     const db = getFirestore(myAuth);
-    db.collection('todos')
+    await db
+      .collection('todos')
       .doc('test')
       .set({ foo: 'bar', uid: myId, name: 'hi' });
     const testDoc = db.collection('todos').doc('test');
@@ -97,7 +98,10 @@ describe('Setup', () => {
   it('Cannot update another users todo', async () => {
     // use admin to create todo with their id
     const admin = getAdminFirestore();
-    admin.collection('todos').doc('test1').set({ foo: 'bar', uid: theirId });
+    await admin
+      .collection('todos')
+      .doc('test1')
+      .set({ foo: 'bar', uid: theirId });
     const db = getFirestore(myAuth);
     const testDoc = db.collection('todos').doc('test1');
     await firebase.assertFails(testDoc.update({ foo: 'baz', uid: myId }));
@@ -105,7 +109,8 @@ describe('Setup', () => {
 
   it('Users can delete todos that belong to them', async () => {
     const db = getFirestore(myAuth);
-    db.collection('todos')
+    await db
+      .collection('todos')
       .doc('delete')
       .set({ foo: 'bar', uid: myId, name: 'hi' });
     const deleteDoc = db.collection('todos').doc('delete');
@@ -115,7 +120,7 @@ describe('Setup', () => {
   it("users cannot delete todos that don't belong to them", async () => {
     // use admin to create todo with their id
     const admin = getAdminFirestore();
-    admin.collection('todos').doc('NO').set({ foo: 'bar', uid: theirId });
+    await admin.collection('todos').doc('NO').set({ foo: 'bar', uid: theirId });
     const db = getFirestore(myAuth);
     const noDel = db.collection('todos').doc('NO');
     await firebase.assertFails(noDel.delete());
@@ -131,7 +136,7 @@ describe('Setup', () => {
 
   /*   
   Test removed as security rule is not implemented, see comment in security rules...
-  
+
   it('Does not Allow a signed in user to create a new empty todo', async () => {
     const db = getFirestore(myAuth);
     const testDoc = db.collection('todos').doc('long walk');
@@ -157,5 +162,35 @@ describe('Setup', () => {
     const db = getFirestore(null);
     const testDoc = db.collection('users');
     await firebase.assertFails(testDoc.get());
+  });
+
+  it('A admin user can update any user profile', async () => {
+    const db = getFirestore(myAuth);
+    await db.collection('users').doc('new').set({ foo: 'bar', no: 'no' });
+    const admin = getAdminFirestore();
+    const adminUser = admin.collection('users').doc('new');
+    await firebase.assertSucceeds(adminUser.update({ foo: 'baz', no: 'yes' }));
+  });
+
+  it('Users can create another user', async () => {
+    const db = getFirestore(myAuth);
+    await db.collection('users').doc('new').set({ foo: 'new' });
+    const testUser = db.collection('users').doc('new');
+    await firebase.assertSucceeds(testUser.get());
+  });
+
+  it('Only admins can update a user to admin', async () => {
+    const db = getFirestore(myAuth);
+    await db.collection('users').doc('new').set({ isAdmin: 'false' });
+    const admin = getAdminFirestore();
+    const testUser = admin.collection('users').doc('new');
+    await firebase.assertSucceeds(testUser.update({ isAdmin: 'true' }));
+  });
+
+  it('A non admin user cannot update a user to admin', async () => {
+    const db = getFirestore(myAuth);
+    await db.collection('users').doc('new').set({ isAdmin: 'false' });
+    const testUser = db.collection('users').doc('new');
+    await firebase.assertFails(testUser.update({ isAdmin: 'true' }));
   });
 });

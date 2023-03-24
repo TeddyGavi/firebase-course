@@ -25,7 +25,7 @@ service cloud.firestore {
     function isOwner(Id){
       return request.auth.uid == Id;
     }
-    
+
   // need to read the specific user document, not availabe on the request object, need query the users collection for the request.auth.uid
 
     function getUserData() {
@@ -61,7 +61,6 @@ service cloud.firestore {
     // Users can view, update and delete their own to-do items.
       allow read, update, delete: if isSignedIn() && isOwner(existingData().uid)
     }
-
 
     match /users/{userId} {
     // Any authenticated user may create a profile and view other users' profiles.
