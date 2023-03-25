@@ -1,4 +1,3 @@
-require('dotenv');
 const assert = require('assert');
 const firebase = require('@firebase/testing');
 const fs = require('fs');
@@ -62,9 +61,9 @@ describe('Setup', () => {
     const testDoc = db.collection('test_documents').doc(docId);
     await firebase.assertFails(testDoc.update({ content: 'after' }));
   });
-
-  // todos
-
+});
+// todos
+describe('Simple Unit tests for todos', () => {
   it('A signed in user can read their own todos', async () => {
     const db = getFirestore(myAuth);
     const testDoc = db.collection('todos').where('uid', '==', myId);
@@ -150,8 +149,10 @@ describe('Setup', () => {
     const testDoc = db.collection('todos').doc('long walk');
     await firebase.assertFails(testDoc.set({ foo: 'bar', uid: theirId }));
   });
+});
 
-  // users
+// users
+describe('Simple unit tests for Users collection', () => {
   it('A signed in user can view users collection', async () => {
     const db = getFirestore(myAuth);
     const testDoc = db.collection('users');

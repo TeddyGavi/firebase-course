@@ -45,7 +45,7 @@ service cloud.firestore {
     }
 
     function isAdminChanged() {
-      // check for status changed of admin, prevents race condition, consider Firebase Admin SDK and custom auth
+      // check for status changed of admin, helps to not race condition, consider Firebase Admin SDK and custom auth or transactions to "lock" a pending update
       return incomingData().diff(existingData()).affectedKeys().hasOnly(['isAdmin'])
     }
     
@@ -53,8 +53,7 @@ service cloud.firestore {
     // Any authenticated user may create to-do items for themselves.
       allow create: if isSignedIn() && isOwner(incomingData().uid)
 
-      // a good idea to verify the input of todos, client and backend.
-      // cannot trust any incoming data, ie: 
+      // TODO: verify the input of todos here and on the client. Cannot trust any incoming data, ie: 
       // && incomingData().name is string && incomingData().name.size() > 0
       // etc as required...
 
