@@ -35,6 +35,9 @@ const Profile = () => {
     }
   }, []);
 
+  const handleAdminChange = () => {
+    updateUser(userDoc.uid, { isAdmin: !userDoc.isAdmin });
+  };
   return (
     <main>
       <Card>
@@ -56,6 +59,43 @@ const Profile = () => {
           </>
         )}
       </LoadingError>
+      {/* Make admin */}
+      {adminMode && userDoc?.uid !== user.uid && (
+        <section>
+          <Card>
+            <div className="flex flex-col justify-between">
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                {' '}
+                Admin Status
+              </h3>
+              {userDoc?.isAdmin ? (
+                <span className="mt-1 text-sm text-gray-500">
+                  User {userDoc?.displayName} is an <strong>Admin.</strong>
+                </span>
+              ) : (
+                <span className="mt-1 text-sm text-gray-500">
+                  User {userDoc?.displayName} is <strong> not an Admin.</strong>
+                </span>
+              )}
+              <span className="mt-1 text-sm text-gray-500">Change status?</span>
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className={`py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${
+                  userDoc?.isAdmin
+                    ? `bg-red-600 hover:bg-red-700 focus:ring-red-500`
+                    : `bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500`
+                }
+              focus:outline-none focus:ring-2 focus:ring-offset-2`}
+                onClick={() => handleAdminChange()}
+              >
+                Yes !
+              </button>
+            </div>
+          </Card>
+        </section>
+      )}
     </main>
   );
 };

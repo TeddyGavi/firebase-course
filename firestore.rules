@@ -17,6 +17,58 @@ service cloud.firestore {
     }
 
     // Add new rules here
-   
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(Id){
+      return request.auth.uid == Id;
+    }
+
+  // need to read the specific user document, not availabe on the request object, need query the users collection for the request.auth.uid
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+    }
+
+    function isAdmin() {
+      return getUserData().isAdmin == true
+    }
+
+    function existingData() {
+      return resource.data
+    }
+
+    function incomingData() {
+      return request.resource.data
+    }
+
+    function isAdminChanged() {
+      // check for status changed of admin, helps to prevent race condition, consider Firebase Admin SDK and custom auth or transactions to "lock" a pending update
+      return incomingData().diff(existingData()).affectedKeys().hasOnly(['isAdmin'])
+    }
+    
+    match /todos/{todoId} {
+    // Any authenticated user may create to-do items for themselves.
+      allow create: if isSignedIn() && isOwner(incomingData().uid)
+
+      // TODO: verify the input of todos here and on the client. Cannot trust any incoming data, ie: 
+      // && incomingData().name is string && incomingData().name.size() > 0
+      // etc as required...
+
+    // Users can view, update and delete their own to-do items.
+      allow read, update, delete: if isSignedIn() && isOwner(existingData().uid)
+    }
+
+    match /users/{userId} {
+    // Any authenticated user may create a profile and view other users' profiles.
+      allow read, create: if isSignedIn()
+      
+    // Any authenticated user is allowed to edit their own profile.
+    // Admin users can edit any user's profile.
+    // Only the admin users can make other users admins.
+      allow update: if isSignedIn() && (isAdmin() || isOwner(existingData().uid)) && !(isAdminChanged())
+    }
   }
 }
